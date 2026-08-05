@@ -1,0 +1,69 @@
+﻿{
+  "_comment": "GTM Automation Engine autonomous outbound loop configuration. Copy to workspace/autonomous-loop/loop-config.json",
+  "version": "1.0.0",
+  "owner": "ishan bhosale",
+  "copyright": "2026 ishan bhosale",
+  "workspace": {
+    "root": "workspace/autonomous-loop",
+    "working_file": "WORKING.md",
+    "progress_file": "PROGRESS.md",
+    "memory_file": "MEMORY.md",
+    "state_file": "loop-state.json",
+    "daily_memory_dir": "memory"
+  },
+  "heartbeat": {
+    "base_interval_minutes": 15,
+    "mission_control_offsets": [0, 30],
+    "scout_offsets": [0, 15, 30, 45],
+    "writer_offsets": [2, 17, 32, 47],
+    "rep_offsets": [4, 19, 34, 49],
+    "closer_offsets": [6, 21, 36, 51],
+    "standup_time": "23:30",
+    "timezone": "America/Los_Angeles"
+  },
+  "models": {
+    "heartbeat": "haiku",
+    "scout": "haiku",
+    "writer": "sonnet",
+    "rep": "sonnet",
+    "closer": "sonnet",
+    "mission_control": "sonnet"
+  },
+  "daily_cap": {
+    "workable_contacts": 40,
+    "emails_sent": 25,
+    "meetings_requested": 5
+  },
+  "queue_caps": {
+    "scout": 50,
+    "writer": 20,
+    "rep": 30,
+    "closer": 15
+  },
+  "error_budget": {
+    "consecutive_failures": 3,
+    "halt_on_roe_violation": true
+  },
+  "roe_gate": {
+    "enforced": true,
+    "contact_filter_skill": "sales-assistant/skills/01-contact-filter.md",
+    "cursor_rule": ".cursor/rules/sales-outbound-agent.mdc",
+    "revalidate_after_hours": 24,
+    "require_glean_before_scout": true
+  },
+  "integrations": {
+    "crm": "salesforce",
+    "engagement": "outreach",
+    "internal_search": "glean",
+    "prospecting_data": ["zoominfo", "workspace/leads"]
+  },
+  "plugin_dependencies": [
+    "sales-assistant",
+    "sales-prospecting",
+    "email-sequence-orchestration",
+    "intent-signal-orchestration",
+    "sales-handoff-orchestration",
+    "data-enrichment-master"
+  ]
+}
+

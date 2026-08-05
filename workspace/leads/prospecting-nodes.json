@@ -1,0 +1,288 @@
+﻿{
+  "_readme": "ExampleCo ICP Prospecting - Node patches for instagram_lead_scraper_t1_v7.json. Import each node into the v7 workflow via n8n canvas > paste nodes. Connect Campaign Config as first node after Manual Trigger. Replace Set2 search prompt and AI Extract system message. Add ExampleCo ICP scoring and email drafter nodes before Tier Switch.",
+  "_version": "exampleco-v1",
+  "_verticals": ["ecommerce", "saas", "manufacturing", "multi_region"],
+
+  "nodes": [
+
+    {
+      "_label": "NODE 1 - Drop this as first node after Manual Trigger",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "cfg1", "name": "vertical_key",  "type": "string", "value": "ecommerce" },
+            { "id": "cfg2", "name": "industry",      "type": "string", "value": "E-Commerce / Online Retail" },
+            { "id": "cfg3", "name": "region",        "type": "string", "value": "United States" },
+            { "id": "cfg4", "name": "size_band",     "type": "string", "value": "50-500 employees" },
+            { "id": "cfg5", "name": "revenue_band",  "type": "string", "value": "$10M - $100M" },
+            { "id": "cfg6", "name": "target_count",  "type": "number", "value": 10 },
+            { "id": "cfg7", "name": "language",      "type": "string", "value": "en-US" },
+            { "id": "cfg8", "name": "campaign_id",   "type": "string", "value": "={{ 'exc_' + $now.toFormat('yyyyMMdd_HHmm') }}" },
+            { "id": "cfg9", "name": "demo_mode",     "type": "boolean","value": false },
+            { "id": "cfg10","name": "product_focus", "type": "string", "value": "Core Automation Platform" },
+            { "id": "cfg11","name": "owner_name",    "type": "string", "value": "ishan bhosale" },
+            { "id": "cfg12","name": "owner_email",   "type": "string", "value": "" },
+            { "id": "cfg13","name": "search_prompt", "type": "string", "value": "={{ (() => {\n  const templates = {\n    ecommerce: 'Find 10 US e-commerce or direct-to-consumer companies with 50-500 employees and $10M-$100M revenue that sell physical products across multiple US states. They should use Shopify Plus, Magento, BigCommerce, or NetSuite. Look for the Controller, CFO, VP Finance, or VP Operations. Find their company website and business email. Include any recent news about expansion, funding, or new warehouse openings.',\n    saas: 'Find 10 US SaaS or software companies with 100-1000 employees and $10M-$200M revenue that use Salesforce, Zuora, Stripe, or Chargebee for billing. Look for the Controller, CFO, VP Finance, or Revenue Operations leader. Find their company website and business email. Include any recent news about product launches, funding rounds, or new market expansion.',\n    manufacturing: 'Find 10 US manufacturing or wholesale distribution companies with 100-2000 employees and $25M-$500M revenue that use SAP, Oracle ERP, Microsoft Dynamics, or Epicor. Look for the Controller, CFO, Operations Manager, or VP Operations. Find their company website and business email. Include any recent news about new facilities, M&A, or ERP upgrades.',\n    multi_region: 'Find 10 US multi-location operations companies with 100-2000 employees owning properties across multiple states. Look for the Director of Multi-Region Ops, VP Real Estate, Operations Manager, or Controller. Find their company website and business email. Include any recent news about portfolio expansion or new acquisitions.'\n  };\n  const vk = $('Set - Campaign Config').first().json.vertical_key || 'ecommerce';\n  return templates[vk] || templates.ecommerce;\n})() }}"
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-15200, 1632],
+      "id": "exc-campaign-config-001",
+      "name": "Set - Campaign Config (ExampleCo)"
+    },
+
+    {
+      "_label": "NODE 2 - Replace existing AI Extract to JSON2 system message with this",
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output || $json.text || JSON.stringify($json) }}",
+        "options": {
+          "systemMessage": "Extract each B2B prospect from the input into a JSON array.\n\nFor each prospect return EXACTLY these fields:\n- brand (company name)\n- contact_name (first + last name of the decision maker found)\n- contact_title (exact title: Controller, CFO, VP Finance, VP Operations, Operations Manager, etc.)\n- email (REQUIRED — business email. If no email visible, use info@<domain>. NEVER return empty, null, or personal domains like gmail/yahoo. Omit the lead entirely if you cannot determine a business domain.)\n- website (company website URL, REQUIRED)\n- industry (company industry: E-Commerce, SaaS, Manufacturing, Distribution, Real Estate, etc.)\n- employee_count (estimated: \"50-200\", \"200-500\", \"500-1000\", \"1000+\")\n- revenue_band (estimated: \"<$10M\", \"$10M-$50M\", \"$50M-$200M\", \"$200M+\")\n- states_of_operation (US states the company operates in or ships to — comma-separated, e.g. \"CA, TX, NY, FL\")\n- erp_or_billing_platform (any ERP or billing platform detected: SAP, NetSuite, Salesforce, Zuora, Shopify, etc. or \"unknown\")\n- recent_signals (array — REQUIRED, at least one entry): each signal is: { \"type\": \"<funding|hiring|expansion|acquisition|erp_migration|ecommerce_launch|unknown>\", \"summary\": \"<one sentence>\", \"source\": \"<URL or unknown>\", \"detected_at\": \"<ISO date or unknown>\" }\n- linkedin_url (LinkedIn company page URL if found, or empty string)\n- scraped_at (ISO timestamp — use current time)\n\nRules:\n1. Only include decision makers with title containing: Controller, CFO, VP Finance, Finance Director, VP Operations, Operations Manager, AP Manager, Revenue Ops, Head of Finance, VP E-Commerce, Dir of Commerce.\n2. Exclude: IT titles, Engineering titles, Marketing titles, Sales titles, HR titles.\n3. If recent_signals has no verifiable source, set source to \"unknown\" — do NOT fabricate news.\n4. Return ONLY a valid JSON array. No markdown fences. No explanation.\n\nExample:\n[{\"brand\":\"Acme Retail\",\"contact_name\":\"Jane Smith\",\"contact_title\":\"Controller\",\"email\":\"jsmith@acmeretail.com\",\"website\":\"acmeretail.com\",\"industry\":\"E-Commerce\",\"employee_count\":\"200-500\",\"revenue_band\":\"$50M-$200M\",\"states_of_operation\":\"CA, TX, NY, FL, IL\",\"erp_or_billing_platform\":\"NetSuite, Shopify Plus\",\"recent_signals\":[{\"type\":\"expansion\",\"summary\":\"Opened new fulfillment center in Texas Q1 2026\",\"source\":\"unknown\",\"detected_at\":\"2026-01-15\"}],\"linkedin_url\":\"linkedin.com/company/acme-retail\",\"scraped_at\":\"2026-05-28T00:00:00Z\"}]",
+          "maxIterations": 3,
+          "returnIntermediateSteps": false,
+          "timeout": 60000,
+          "continueOnFail": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [-13968, 1632],
+      "id": "exc-extract-json-002",
+      "name": "AI Extract to JSON (ExampleCo B2B)"
+    },
+
+    {
+      "_label": "NODE 3 - ExampleCo ICP scoring weights (replaces existing ICP weight Set node)",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "icp1",
+              "name": "icp_weights",
+              "type": "string",
+              "value": "={{ (() => {\n  const vk = ($('Set - Campaign Config (ExampleCo)').first().json.vertical_key || 'ecommerce').toLowerCase();\n  const profiles = {\n    ecommerce:     { w_revenue: 20, w_expansion: 30, w_platform: 15, w_title: 20, w_signals: 15 },\n    saas:          { w_revenue: 25, w_expansion: 20, w_platform: 20, w_title: 20, w_signals: 15 },\n    manufacturing: { w_revenue: 20, w_expansion: 35, w_platform: 10, w_title: 20, w_signals: 15 },\n    multi_region:  { w_revenue: 15, w_expansion: 40, w_platform: 0,  w_title: 25, w_signals: 20 }\n  };\n  return JSON.stringify(profiles[vk] || profiles.ecommerce);\n})() }}"
+            },
+            {
+              "id": "icp2",
+              "name": "expansion_score",
+              "type": "number",
+              "value": "={{ (() => {\n  const states = ($json.states_of_operation || '').split(',').map(s => s.trim()).filter(Boolean);\n  if (states.length >= 10) return 100;\n  if (states.length >= 5)  return 75;\n  if (states.length >= 3)  return 50;\n  if (states.length >= 1)  return 25;\n  return 0;\n})() }}"
+            },
+            {
+              "id": "icp3",
+              "name": "revenue_score",
+              "type": "number",
+              "value": "={{ (() => {\n  const rb = ($json.revenue_band || '').toLowerCase();\n  if (rb.includes('200m') || rb.includes('200m+')) return 100;\n  if (rb.includes('50m') && rb.includes('200m'))   return 85;\n  if (rb.includes('10m') && rb.includes('50m'))    return 70;\n  if (rb.includes('10m'))                          return 50;\n  return 20;\n})() }}"
+            },
+            {
+              "id": "icp4",
+              "name": "platform_score",
+              "type": "number",
+              "value": "={{ (() => {\n  const p = ($json.erp_or_billing_platform || '').toLowerCase();\n  const high = ['shopify plus','magento','netsuite','sap','oracle','dynamics','zuora','stripe','chargebee'];\n  const med  = ['shopify','woocommerce','quickbooks','xero','epicor','infor'];\n  if (high.some(x => p.includes(x))) return 100;\n  if (med.some(x => p.includes(x)))  return 60;\n  return 20;\n})() }}"
+            },
+            {
+              "id": "icp5",
+              "name": "title_score",
+              "type": "number",
+              "value": "={{ (() => {\n  const t = ($json.contact_title || '').toLowerCase();\n  if (t.includes('cfo') || t.includes('chief financial')) return 100;\n  if (t.includes('controller'))                           return 90;\n  if (t.includes('vp finance') || t.includes('finance director')) return 80;\n  if (t.includes('dir') && t.includes('operations'))             return 85;\n  if (t.includes('operations manager'))                         return 70;\n  if (t.includes('ap manager') || t.includes('accounts payable')) return 55;\n  if (t.includes('revenue ops'))                         return 60;\n  return 30;\n})() }}"
+            },
+            {
+              "id": "icp6",
+              "name": "signals_score",
+              "type": "number",
+              "value": "={{ (() => {\n  try {\n    const sigs = JSON.parse($json.RECENT_SIGNALS || '[]');\n    if (!sigs.length) return 0;\n    const highValue = ['expansion','acquisition','funding','erp_migration','ecommerce_launch'];\n    const hasHigh = sigs.some(s => highValue.includes(s.type));\n    const hasSource = sigs.some(s => s.source && s.source !== 'unknown');\n    if (hasHigh && hasSource) return 100;\n    if (hasHigh) return 70;\n    return 40;\n  } catch(e) { return 0; }\n})() }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-10800, 1632],
+      "id": "exc-icp-scores-003",
+      "name": "Set - ExampleCo ICP Sub-scores"
+    },
+
+    {
+      "_label": "NODE 4 - Final ICP score calculator",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "score1",
+              "name": "ICP_SCORE",
+              "type": "number",
+              "value": "={{ (() => {\n  try {\n    const w = JSON.parse($json.icp_weights || '{}');\n    const rev  = ($json.revenue_score  || 0) * ((w.w_revenue  || 20) / 100);\n    const nex  = ($json.expansion_score    || 0) * ((w.w_expansion    || 30) / 100);\n    const plat = ($json.platform_score || 0) * ((w.w_platform || 15) / 100);\n    const tit  = ($json.title_score    || 0) * ((w.w_title    || 20) / 100);\n    const sig  = ($json.signals_score  || 0) * ((w.w_signals  || 15) / 100);\n    return Math.round(rev + nex + plat + tit + sig);\n  } catch(e) { return 0; }\n})() }}"
+            },
+            {
+              "id": "score2",
+              "name": "ICP_TIER",
+              "type": "string",
+              "value": "={{ (() => {\n  const s = $json.ICP_SCORE || 0;\n  if (s >= 75) return 'HOT';\n  if (s >= 50) return 'WARM';\n  return 'COLD';\n})() }}"
+            },
+            {
+              "id": "score3",
+              "name": "ICP_REASONING",
+              "type": "string",
+              "value": "={{ 'Rev:' + ($json.revenue_score||0) + ' Expansion:' + ($json.expansion_score||0) + ' Platform:' + ($json.platform_score||0) + ' Title:' + ($json.title_score||0) + ' Signals:' + ($json.signals_score||0) + ' => ' + ($json.ICP_SCORE||0) + ' (' + ($json.ICP_TIER||'?') + ')' }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-10400, 1632],
+      "id": "exc-icp-total-004",
+      "name": "Set - ExampleCo ICP Total Score"
+    },
+
+    {
+      "_label": "NODE 5 - ExampleCo email context builder (feeds the AI drafter)",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ctx1",
+              "name": "email_context",
+              "type": "string",
+              "value": "={{ JSON.stringify({\n  brand:          $json.brand,\n  contact_name:   $json.contact_name,\n  contact_title:  $json.contact_title,\n  industry:       $json.industry,\n  states:         $json.states_of_operation,\n  platform:       $json.erp_or_billing_platform,\n  revenue_band:   $json.revenue_band,\n  tier:           $json.ICP_TIER,\n  icp_score:      $json.ICP_SCORE,\n  recent_signals: (() => { try { return JSON.parse($json.RECENT_SIGNALS || '[]'); } catch(e) { return []; } })(),\n  product_focus:  $('Set - Campaign Config (ExampleCo)').first().json.product_focus,\n  owner_name:     $('Set - Campaign Config (ExampleCo)').first().json.owner_name,\n  language:       $('Set - Campaign Config (ExampleCo)').first().json.language\n}) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-9800, 1632],
+      "id": "exc-email-context-005",
+      "name": "Set - Build ExampleCo Email Context"
+    },
+
+    {
+      "_label": "NODE 6 - AI Email Drafter (5-part formula)",
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.email_context }}",
+        "options": {
+          "systemMessage": "You are an outbound copywriter for an ExampleCo sales rep.\n\nExampleCo sells a B2B SaaS workflow and data automation platform (core platform plus document workflow and multi-region ops modules) to US B2B companies.\n\nGiven a JSON context with brand, contact details, industry, recent_signals, ICP tier, and states of operation, write ONE cold email using the 5-part formula.\n\n5-PART FORMULA (follow exactly):\n1. SPECIFIC OPENER: One sentence referencing a specific, real detail about the company — a recent signal from recent_signals, their ERP platform, or the number of states they operate in. Never use \"I hope this email finds you well\" or generic openers.\n2. BINARY DIAGNOSTIC QUESTION: One yes/no question that surfaces whether they have the pain. For ops automation: \"Is your team handling [X-state] data reconciliation across systems manually?\" or \"Did your last ERP upgrade break your integration workflow?\"\n3. NAMED SOCIAL PROOF: Reference a real customer account in their industry (not a made-up name). Use: NorthwindSaaS, Contoso Software, Fabrikam Labs, Globex Retail, Meridian Logistics. Match to their industry.\n4. BUY-LUNCH-OVER-ZOOM CTA: Low-friction ask — a 15-minute call, not a demo. \"Worth a 15-minute call this week to see if the math works for [brand]?\"\n5. OPT-OUT LINE: \"If workflow automation isn't a priority right now, just say so — I'll leave you alone.\"\n\nHARD RULES:\n- Under 120 words in the body (not counting greeting or sign-off)\n- No em dashes\n- No exclamation marks\n- No \"leverage\", \"synergy\", \"circle back\", \"touch base\", \"reaching out\"\n- Tier tone: HOT = direct, name the pain; WARM = consultative question first; COLD = light touch, earn the reply\n- Do NOT fabricate news, customer names, or funding amounts not in recent_signals\n- If all recent_signals have source=unknown, use the number of states they operate in as the opener instead\n- Sign off as the owner_name from context\n\nOutput ONLY valid JSON on one line — no markdown, no explanation:\n{\"subject\":\"<max 55 chars, no exclamation marks>\",\"body_plain\":\"<email body, no greeting or sign-off>\",\"greeting\":\"<Hi [First Name],>\",\"signoff\":\"<Best, [owner_name]>\",\"body_html\":\"<p> tags only, same content as body_plain>\",\"signal_used\":\"<summary of the recent_signal used in opener, or 'states of operation' if none>\"}",
+          "maxIterations": 2,
+          "timeout": 60000,
+          "continueOnFail": true
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [-9400, 1632],
+      "id": "exc-email-drafter-006",
+      "name": "AI Agent - Draft ExampleCo Email"
+    },
+
+    {
+      "_label": "NODE 7 - Parse email output and write final sheet columns",
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "parse1",
+              "name": "EMAIL_SUBJECT",
+              "type": "string",
+              "value": "={{ (() => { try { const o = ($json.output||$json.text||'').replace(/```json/gi,'').replace(/```/g,'').trim(); const p = JSON.parse(o); return p.subject || 'Following up - ' + $('Set - Campaign Config (ExampleCo)').first().json.product_focus; } catch(e) { return 'Quick question re: ops automation - ' + ($json.brand||''); } })() }}"
+            },
+            {
+              "id": "parse2",
+              "name": "EMAIL_BODY",
+              "type": "string",
+              "value": "={{ (() => { try { const o = ($json.output||$json.text||'').replace(/```json/gi,'').replace(/```/g,'').trim(); const p = JSON.parse(o); return (p.greeting||'Hi,') + '\\n\\n' + (p.body_plain||'') + '\\n\\n' + (p.signoff||'Best,\\nTejas'); } catch(e) { return ''; } })() }}"
+            },
+            {
+              "id": "parse3",
+              "name": "EMAIL_HTML",
+              "type": "string",
+              "value": "={{ (() => { try { const o = ($json.output||$json.text||'').replace(/```json/gi,'').replace(/```/g,'').trim(); const p = JSON.parse(o); return '<p>' + (p.greeting||'Hi,') + '</p>' + (p.body_html||'<p>' + (p.body_plain||'') + '</p>') + '<p>' + (p.signoff||'Best,<br>Tejas') + '</p>'; } catch(e) { return ''; } })() }}"
+            },
+            {
+              "id": "parse4",
+              "name": "SIGNAL_USED",
+              "type": "string",
+              "value": "={{ (() => { try { const o = ($json.output||$json.text||'').replace(/```json/gi,'').replace(/```/g,'').trim(); const p = JSON.parse(o); return p.signal_used || 'none'; } catch(e) { return 'none'; } })() }}"
+            }
+          ]
+        },
+        "options": { "ignoreConversionErrors": true }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-9000, 1632],
+      "id": "exc-email-parse-007",
+      "name": "Set - Wrap ExampleCo Email"
+    },
+
+    {
+      "_label": "NODE 8 - Google Sheets column schema (add these columns to your sheet header)",
+      "_columns_to_add": [
+        "BRAND", "CONTACT_NAME", "CONTACT_TITLE", "EMAIL_ADDRESS", "EMAIL_SOURCE",
+        "WEBSITE", "INDUSTRY", "EMPLOYEE_COUNT", "REVENUE_BAND", "STATES_OF_OPERATION",
+        "ERP_PLATFORM", "RECENT_SIGNALS", "LINKEDIN_URL", "CAMPAIGN_ID", "VERTICAL_KEY",
+        "ICP_SCORE", "ICP_TIER", "ICP_REASONING", "EMAIL_SUBJECT", "EMAIL_BODY",
+        "EMAIL_HTML", "SIGNAL_USED", "SENT_AT", "EMAIL_SOURCE",
+        "SEQUENCE_STATUS", "SEQUENCE_STEP", "LAST_SENT_AT", "NEXT_SEND_AT", "REPLY_DETECTED_AT"
+      ],
+      "_note": "Use appendOrUpdate matching on EMAIL_ADDRESS for idempotency"
+    },
+
+    {
+      "_label": "STICKY NOTE - ExampleCo Discovery subgraph label",
+      "parameters": {
+        "content": "ExampleCo B2B ICP Discovery (ALFA Web Search)\nVerticals: E-Commerce | SaaS | Manufacturing | Multi-Region Ops\nTarget: Controller, CFO, VP Finance, VP Operations\nRevenue: $10M-$200M | 50-2000 employees",
+        "height": 140,
+        "width": 600,
+        "color": 2
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-15400, 1440],
+      "id": "exc-sticky-discovery-008",
+      "name": "ExampleCo Discovery Subgraph"
+    },
+
+    {
+      "_label": "STICKY NOTE - ICP Scoring subgraph label",
+      "parameters": {
+        "content": "ExampleCo ICP Scoring\nMulti-region complexity (30%) | Revenue band (20%) | Decision maker title (20%) | Platform (15%) | Why Now signals (15%)\nHOT >= 75 | WARM >= 50 | COLD < 50",
+        "height": 140,
+        "width": 600,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-11000, 1200],
+      "id": "exc-sticky-icp-009",
+      "name": "ExampleCo ICP Scoring Subgraph"
+    }
+  ],
+
+  "connection_order": [
+    "Set - Campaign Config (ExampleCo)",
+    "Set2 (search prompt reads vertical_key from Campaign Config)",
+    "AI Agent2 + ALFA web search",
+    "AI Extract to JSON (ExampleCo B2B)",
+    "Set - Parse JSON Array",
+    "Split Out - Leads",
+    "Set - Parse Lead Schema2",
+    "IF - Needs Email Enrichment",
+    "Google Sheets write",
+    "Set - ExampleCo ICP Sub-scores",
+    "Set - ExampleCo ICP Total Score",
+    "Switch - Tier (HOT/WARM/COLD)",
+    "Set - Build ExampleCo Email Context",
+    "AI Agent - Draft ExampleCo Email",
+    "Set - Wrap ExampleCo Email",
+    "Microsoft Outlook - Send",
+    "Google Sheets - Update SENT_AT"
+  ]
+}
+

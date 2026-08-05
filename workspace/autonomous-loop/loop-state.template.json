@@ -1,0 +1,30 @@
+﻿{
+  "version": "1.0.0",
+  "owner": "ishan bhosale",
+  "copyright": "2026 ishan bhosale",
+  "paused": false,
+  "halt_reason": null,
+  "mode": "tick",
+  "stage_lock": null,
+  "last_ticks": {
+    "loop-mission-control": null,
+    "outbound-scout": null,
+    "outbound-writer": null,
+    "outbound-rep": null,
+    "outbound-closer": null
+  },
+  "daily_counters": {
+    "workable_added": 0,
+    "emails_sent": 0,
+    "meetings_proposed": 0,
+    "roe_skip": 0,
+    "roe_flag": 0
+  },
+  "error_budget": {
+    "consecutive_failures": 0
+  },
+  "accounts": [],
+  "handoffs": [],
+  "config_history": []
+}
+

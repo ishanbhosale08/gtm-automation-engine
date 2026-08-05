@@ -1,0 +1,11 @@
+name,title,company,email,status
+Jane Doe,VP Finance,ExampleCo,jane.doe@example-saas.com,WORKABLE
+Marcus Chen,Controller,NorthwindSaaS,marcus.chen@northwindsaas.com,WORKABLE
+Priya Patel,Director of Operations,ExampleCo,priya.patel@example-saas.com,WORKABLE
+Alex Rivera,CFO,Contoso Software,alex.rivera@contoso-software.com,WORKABLE
+Sam Okonkwo,Operations Manager,ExampleCo,sam.okonkwo@example-saas.com,FLAG
+Nina Kowalski,VP E-commerce,NorthwindSaaS,nina.kowalski@northwindsaas.com,WORKABLE
+Jordan Lee,Compliance Manager,Fabrikam Labs,jordan.lee@fabrikamlabs.com,SKIP
+Taylor Brooks,Director of Operations,ExampleCo,taylor.brooks@example-saas.com,WORKABLE
+Riley Morgan,AP Manager,NorthwindSaaS,riley.morgan@northwindsaas.com,WORKABLE
+Casey Nguyen,CTO,Contoso Software,casey.nguyen@contoso-software.com,WORKABLE
